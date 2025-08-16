@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Shield, Menu, X, Upload, BarChart3, User, HelpCircle } from "lucide-react";
+import { Shield, Menu, X, Upload, BarChart3, User, HelpCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
@@ -31,25 +33,41 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                className={({ isActive }) =>
-                  `flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                    isActive
-                      ? "glass-strong text-accent"
-                      : "text-muted-foreground hover:text-foreground hover:glass"
-                  }`
-                }
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.name}</span>
+            {user ? (
+              <>
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    className={({ isActive }) =>
+                      `flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+                        isActive
+                          ? "glass-strong text-accent"
+                          : "text-muted-foreground hover:text-foreground hover:glass"
+                      }`
+                    }
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.name}</span>
+                  </NavLink>
+                ))}
+                <Button
+                  onClick={signOut}
+                  variant="ghost"
+                  size="sm"
+                  className="ml-4 flex items-center space-x-2 text-muted-foreground hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Sign Out</span>
+                </Button>
+              </>
+            ) : (
+              <NavLink to="/auth">
+                <Button variant="outline" size="sm" className="ml-4">
+                  Sign In
+                </Button>
               </NavLink>
-            ))}
-            <Button variant="outline" size="sm" className="ml-4">
-              Sign In
-            </Button>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -68,28 +86,47 @@ const Navigation = () => {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden py-4 space-y-2 animate-slide-up">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                className={({ isActive }) =>
-                  `flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-300 ${
-                    isActive
-                      ? "glass-strong text-accent"
-                      : "text-muted-foreground hover:text-foreground hover:glass"
-                  }`
-                }
-                onClick={() => setIsOpen(false)}
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.name}</span>
-              </NavLink>
-            ))}
-            <div className="pt-4 border-t border-white/10">
-              <Button variant="outline" className="w-full">
-                Sign In
-              </Button>
-            </div>
+            {user ? (
+              <>
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    className={({ isActive }) =>
+                      `flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-300 ${
+                        isActive
+                          ? "glass-strong text-accent"
+                          : "text-muted-foreground hover:text-foreground hover:glass"
+                      }`
+                    }
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.name}</span>
+                  </NavLink>
+                ))}
+                <div className="pt-4 border-t border-white/10">
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-300 text-muted-foreground hover:text-foreground hover:glass w-full text-left"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="pt-4 border-t border-white/10">
+                <NavLink to="/auth" onClick={() => setIsOpen(false)}>
+                  <Button variant="outline" className="w-full">
+                    Sign In
+                  </Button>
+                </NavLink>
+              </div>
+            )}
           </div>
         )}
       </div>
