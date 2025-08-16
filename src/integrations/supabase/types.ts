@@ -7,39 +7,219 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
-  }
   public: {
     Tables: {
       profiles: {
         Row: {
+          id: string
+          user_id: string
+          display_name: string | null
           avatar_url: string | null
           created_at: string
-          display_name: string | null
-          id: string
           updated_at: string
-          user_id: string
         }
         Insert: {
+          id?: string
+          user_id: string
+          display_name?: string | null
           avatar_url?: string | null
           created_at?: string
-          display_name?: string | null
-          id?: string
           updated_at?: string
-          user_id: string
         }
         Update: {
+          id?: string
+          user_id?: string
+          display_name?: string | null
           avatar_url?: string | null
           created_at?: string
-          display_name?: string | null
-          id?: string
           updated_at?: string
-          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      media_files: {
+        Row: {
+          id: string
+          user_id: string
+          file_name: string
+          file_type: string
+          file_size: number
+          file_url: string
+          thumbnail_url: string | null
+          status: string
+          upload_progress: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          file_name: string
+          file_type: string
+          file_size: number
+          file_url: string
+          thumbnail_url?: string | null
+          status?: string
+          upload_progress?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          file_name?: string
+          file_type?: string
+          file_size?: number
+          file_url?: string
+          thumbnail_url?: string | null
+          status?: string
+          upload_progress?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_files_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      analysis_results: {
+        Row: {
+          id: string
+          media_file_id: string
+          confidence_score: number
+          classification: string
+          processing_time_ms: number
+          analysis_metadata: Json | null
+          heatmap_data: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          media_file_id: string
+          confidence_score: number
+          classification: string
+          processing_time_ms: number
+          analysis_metadata?: Json | null
+          heatmap_data?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          media_file_id?: string
+          confidence_score?: number
+          classification?: string
+          processing_time_ms?: number
+          analysis_metadata?: Json | null
+          heatmap_data?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_results_media_file_id_fkey"
+            columns: ["media_file_id"]
+            isOneToOne: false
+            referencedRelation: "media_files"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_feedback: {
+        Row: {
+          id: string
+          analysis_result_id: string
+          user_id: string
+          rating: number
+          feedback_text: string | null
+          sentiment: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          analysis_result_id: string
+          user_id: string
+          rating: number
+          feedback_text?: string | null
+          sentiment?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          analysis_result_id?: string
+          user_id?: string
+          rating?: number
+          feedback_text?: string | null
+          sentiment?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_analysis_result_id_fkey"
+            columns: ["analysis_result_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          theme: string
+          high_contrast: boolean
+          notifications_enabled: boolean
+          auto_export_results: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          theme?: string
+          high_contrast?: boolean
+          notifications_enabled?: boolean
+          auto_export_results?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          theme?: string
+          high_contrast?: boolean
+          notifications_enabled?: boolean
+          auto_export_results?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {

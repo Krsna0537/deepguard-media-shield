@@ -9,6 +9,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
+import Results from "./pages/Results";
+import Profile from "./pages/Profile";
+import Help from "./pages/Help";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +39,17 @@ const App = () => (
                   <Upload />
                 </ProtectedRoute>
               } />
+              <Route path="/results/:mediaFileId" element={
+                <ProtectedRoute>
+                  <Results />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/help" element={<Help />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

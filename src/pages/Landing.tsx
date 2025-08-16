@@ -2,8 +2,41 @@ import { ArrowRight, Shield, Zap, Globe, CheckCircle, Upload, BarChart3, Lock } 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Landing = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleStartAnalyzing = () => {
+    if (user) {
+      navigate('/upload');
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const handleViewDashboard = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/upload');
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const handleScheduleDemo = () => {
+    alert('Demo scheduling feature coming soon! Please contact us at demo@deepguard.com');
+  };
+
   const features = [
     {
       icon: Shield,
@@ -66,12 +99,12 @@ const Landing = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="gradient-primary hover:shadow-lg hover:scale-105 transition-all duration-300">
+            <Button size="lg" className="gradient-primary hover:shadow-lg hover:scale-105 transition-all duration-300" onClick={handleStartAnalyzing}>
               <Upload className="h-5 w-5 mr-2" />
               Start Analyzing
               <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
-            <Button variant="outline" size="lg" className="glass border-white/20 hover:glass-strong">
+            <Button variant="outline" size="lg" className="glass border-white/20 hover:glass-strong" onClick={handleViewDashboard}>
               <BarChart3 className="h-5 w-5 mr-2" />
               View Dashboard
             </Button>
@@ -155,11 +188,11 @@ const Landing = () => {
               Join thousands of professionals protecting their media with AI-powered authentication
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="gradient-primary hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <Button size="lg" className="gradient-primary hover:shadow-lg hover:scale-105 transition-all duration-300" onClick={handleGetStarted}>
                 Get Started Free
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
-              <Button variant="outline" size="lg" className="border-white/20 hover:glass">
+              <Button variant="outline" size="lg" className="border-white/20 hover:glass" onClick={handleScheduleDemo}>
                 Schedule Demo
               </Button>
             </div>
