@@ -3,7 +3,7 @@ export const API_CONFIG = {
   // Reality Defender Configuration
   REALITY_DEFENDER: {
     API_KEY: import.meta.env.VITE_REALITY_DEFENDER_API_KEY || 'YOUR_REALITY_DEFENDER_API_KEY_HERE',
-    API_URL: 'https://api.realitydefender.ai/v1/detect',
+    API_URL: 'https://api.prd.realitydefender.xyz/api/v2/detect',
     FREE_TIER_LIMIT: 100, // requests per month (adjust based on Reality Defender's actual limits)
     TIMEOUT_MS: 30000, // 30 second timeout
     MAX_RETRIES: 3,

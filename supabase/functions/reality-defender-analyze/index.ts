@@ -115,7 +115,7 @@ async function analyzeWithRealityDefender(apiKey: string, fileUrl: string, fileT
 
     console.log('Calling Reality Defender API...');
     
-    const response = await fetch('https://api.realitydefender.ai/v1/detect', {
+    const response = await fetch('https://api.prd.realitydefender.xyz/api/v2/detect', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,

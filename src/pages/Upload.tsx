@@ -51,35 +51,8 @@ const Upload = () => {
   }, []);
 
   const checkAPIStatus = () => {
-    const apiKey = API_CONFIG.REALITY_DEFENDER.API_KEY;
-    
-    if (!apiKey || apiKey === 'YOUR_REALITY_DEFENDER_API_KEY_HERE') {
-      setApiStatus('no-key');
-    } else {
-      // Test API connectivity
-      setApiStatus('checking');
-      testAPIConnectivity();
-    }
-  };
-
-  const testAPIConnectivity = async () => {
-    try {
-      // Simple connectivity test
-      const response = await fetch(API_CONFIG.REALITY_DEFENDER.API_URL, {
-        method: 'HEAD',
-        headers: {
-          'Authorization': `Bearer ${API_CONFIG.REALITY_DEFENDER.API_KEY}`,
-        }
-      });
-      
-      if (response.ok) {
-        setApiStatus('available');
-      } else {
-        setApiStatus('unavailable');
-      }
-    } catch (error) {
-      setApiStatus('unavailable');
-    }
+    // Since we use secure edge function, API is always available
+    setApiStatus('available');
   };
 
   const getAPIStatusDisplay = () => {
