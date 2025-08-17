@@ -1,1 +1,4 @@
 project_id = "dnqdnsscbbkbrqengcjm"
+
+[functions.reality-defender-analyze]
+verify_jwt = true

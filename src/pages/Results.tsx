@@ -617,82 +617,137 @@ const Results = () => {
             </CardContent>
           </Card>
 
-          {/* Detailed Manipulation Analysis */}
-          {(analysisResult.heatmap_data as any)?.manipulation_details && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-orange-500" />
-                  Manipulation Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Overall Manipulation Score */}
-                  <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-orange-800 dark:text-orange-200">Overall Manipulation Score</span>
-                      <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                        {(analysisResult.heatmap_data as any).manipulation_details.overall_score.toFixed(1)}%
+          {/* Reality Defender API Response Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-blue-500" />
+                Reality Defender Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* API Provider Status */}
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Analysis Provider</span>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        (analysisResult.heatmap_data as any)?.fallback ? 'bg-orange-500' : 'bg-green-500'
+                      }`}></div>
+                      <span className="text-sm font-medium">
+                        {(analysisResult.heatmap_data as any)?.fallback ? 'Fallback Analysis' : 'Reality Defender API'}
                       </span>
                     </div>
-                    <div className="w-full bg-orange-200 dark:bg-orange-800 rounded-full h-2">
-                      <div 
-                        className="bg-orange-500 h-2 rounded-full transition-all duration-1000"
-                        style={{ width: `${(analysisResult.heatmap_data as any).manipulation_details.overall_score}%` }}
-                      />
+                  </div>
+                  {(analysisResult.heatmap_data as any)?.message && (
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      {(analysisResult.heatmap_data as any).message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Detection Result Details */}
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Detection Type</span>
+                      <Badge className={getClassificationColor(analysisResult.classification)}>
+                        {analysisResult.classification.toUpperCase()}
+                      </Badge>
                     </div>
                   </div>
                   
-                  {/* Specific Manipulation Types */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { key: 'face_manipulation', label: 'Face Manipulation', color: 'red' },
-                      { key: 'background_manipulation', label: 'Background Issues', color: 'blue' },
-                      { key: 'lighting_inconsistencies', label: 'Lighting Problems', color: 'yellow' },
-                      { key: 'compression_artifacts', label: 'Compression Issues', color: 'purple' }
-                    ].map(({ key, label, color }) => {
-                      const score = (analysisResult.heatmap_data as any).manipulation_details[key];
-                      if (score === undefined || score === 0) return null;
-                      
-                      const colorClasses = {
-                        red: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-200 dark:border-red-800',
-                        blue: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-800',
-                        yellow: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-200 dark:border-yellow-800',
-                        purple: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200 dark:border-purple-800'
-                      };
-                      
-                      return (
-                        <div key={key} className={`p-3 rounded-lg border ${colorClasses[color as keyof typeof colorClasses]}`}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-medium">{label}</span>
-                            <span className="text-sm font-bold">{score.toFixed(1)}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                            <div 
-                              className={`h-1.5 rounded-full transition-all duration-1000 ${
-                                color === 'red' ? 'bg-red-500' :
-                                color === 'blue' ? 'bg-blue-500' :
-                                color === 'yellow' ? 'bg-yellow-500' : 'bg-purple-500'
-                              }`}
-                              style={{ width: `${score}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Confidence Score</span>
+                      <span className={`text-lg font-bold ${getConfidenceColor(analysisResult.confidence_score)}`}>
+                        {analysisResult.confidence_score.toFixed(1)}%
+                      </span>
+                    </div>
                   </div>
                   
-                  {/* Analysis Notes */}
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      <strong>Note:</strong> These scores indicate the likelihood of specific types of manipulation detected by Reality Defender's AI analysis.
-                    </p>
+                  <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Processing Time</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {analysisResult.processing_time_ms}ms
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+
+                {/* Detailed Manipulation Analysis */}
+                {analysisResult.analysis_metadata && 
+                 typeof analysisResult.analysis_metadata === 'object' &&
+                 'manipulation_details' in (analysisResult.analysis_metadata as any) && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Manipulation Details</h4>
+                    
+                    {/* Overall Manipulation Score */}
+                    <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-medium text-orange-800 dark:text-orange-200">Overall Score</span>
+                        <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                          {((analysisResult.analysis_metadata as any).manipulation_details.overall_score || 0).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-orange-200 dark:bg-orange-800 rounded-full h-1.5">
+                        <div 
+                          className="bg-orange-500 h-1.5 rounded-full transition-all duration-1000"
+                          style={{ width: `${(analysisResult.analysis_metadata as any).manipulation_details.overall_score || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Specific Manipulation Types */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: 'face_manipulation', label: 'Face', color: 'red' },
+                        { key: 'background_manipulation', label: 'Background', color: 'blue' },
+                        { key: 'lighting_inconsistencies', label: 'Lighting', color: 'yellow' },
+                        { key: 'compression_artifacts', label: 'Compression', color: 'purple' }
+                      ].map(({ key, label, color }) => {
+                        const score = (analysisResult.analysis_metadata as any)?.manipulation_details?.[key] || 0;
+                        
+                        const colorClasses = {
+                          red: 'text-red-700 dark:text-red-300',
+                          blue: 'text-blue-700 dark:text-blue-300',
+                          yellow: 'text-yellow-700 dark:text-yellow-300',
+                          purple: 'text-purple-700 dark:text-purple-300'
+                        };
+                        
+                        return (
+                          <div key={key} className="p-2 bg-gray-50 dark:bg-gray-800 rounded text-center">
+                            <div className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}</div>
+                            <div className={`text-sm font-bold ${colorClasses[color as keyof typeof colorClasses]}`}>
+                              {score.toFixed(1)}%
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Result Summary */}
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Result Summary</h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {analysisResult.classification === 'authentic' && 
+                      'Analysis indicates this media is genuine and unaltered. The AI detected no significant signs of manipulation.'
+                    }
+                    {analysisResult.classification === 'deepfake' && 
+                      'Analysis detected artificial manipulation or generation. The AI identified patterns consistent with deepfake technology.'
+                    }
+                    {analysisResult.classification === 'suspicious' && 
+                      'Analysis found some characteristics that warrant further investigation. Manual review recommended.'
+                    }
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}

@@ -229,7 +229,7 @@ export class MediaService {
     }
   }
 
-  // Real deepfake detection using Reality Defender API
+  // Real deepfake detection using Reality Defender API via secure edge function
   private static async performRealityDefenderDetection(fileUrl: string, fileType: string): Promise<{
     confidence_score: number;
     classification: 'authentic' | 'deepfake' | 'suspicious';
@@ -237,236 +237,44 @@ export class MediaService {
     heatmap_data: any;
     manipulation_details?: any;
   }> {
-    const startTime = Date.now();
-
-    // Only process images for now (Reality Defender works best with images)
-    if (!fileType.startsWith('image/')) {
-      // For non-images, return a placeholder result
-      return {
-        confidence_score: 50,
-        classification: 'suspicious',
-        processing_time_ms: Date.now() - startTime,
-        heatmap_data: { message: 'Video/audio analysis requires premium API' }
-      };
-    }
-
-    // Check if we have a valid API key
-    if (!this.REALITY_DEFENDER_API_KEY || this.REALITY_DEFENDER_API_KEY === 'YOUR_REALITY_DEFENDER_API_KEY_HERE') {
-      console.warn('Reality Defender API key not configured, using fallback analysis');
-      return this.getFallbackAnalysis(startTime);
-    }
-
     try {
-      // Call Reality Defender API with retry logic
-      const result = await this.callRealityDefenderAPI(fileUrl);
-      
-      // Parse Reality Defender response with enhanced logic
-      const analysisData = this.parseRealityDefenderResponse(result);
-      
+      // Call our secure edge function that handles the Reality Defender API
+      const { data, error } = await supabase.functions.invoke('reality-defender-analyze', {
+        body: {
+          fileUrl,
+          fileType
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(`Analysis failed: ${error.message}`);
+      }
+
       return {
-        confidence_score: analysisData.confidence_score,
-        classification: analysisData.classification,
-        processing_time_ms: Date.now() - startTime,
-        heatmap_data: analysisData.heatmap_data,
-        manipulation_details: analysisData.manipulation_details
+        confidence_score: data.confidence_score,
+        classification: data.classification,
+        processing_time_ms: data.processing_time_ms,
+        heatmap_data: data.heatmap_data,
+        manipulation_details: data.manipulation_details
       };
 
     } catch (error: any) {
-      console.error('Reality Defender API call failed:', error);
+      console.error('Reality Defender analysis failed:', error);
       
-      // Fallback to simulated analysis if API fails
+      // Fallback to simulated analysis if edge function fails
+      const startTime = Date.now();
       return this.getFallbackAnalysis(startTime, error.message);
     }
   }
 
-  // Enhanced API call with retry logic and timeout
-  private static async callRealityDefenderAPI(fileUrl: string, retryCount = 0): Promise<any> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.REALITY_DEFENDER.TIMEOUT_MS);
+  // Remove old API call method - now handled by edge function
 
-    try {
-      // Prepare the request
-      const formData = new FormData();
-      formData.append('image', fileUrl);
-      
-      // Add additional parameters for better results
-      formData.append('detailed_analysis', 'true');
-      formData.append('confidence_threshold', '0.7');
-      formData.append('include_heatmap', 'true');
+  // Remove old response parsing - now handled by edge function
 
-      const response = await fetch(this.REALITY_DEFENDER_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.REALITY_DEFENDER_API_KEY}`,
-          'User-Agent': 'DeepGuard/1.0',
-        },
-        body: formData,
-        signal: controller.signal
-      });
+  // Remove old heatmap generation - now handled by edge function
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Reality Defender API error: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      
-      // Check for API errors in response
-      if (result.error) {
-        throw new Error(`Reality Defender API error: ${result.error}`);
-      }
-
-      // Check usage limits
-      if (result.usage && result.usage.requests_remaining !== undefined && result.usage.requests_remaining <= 5) {
-        console.warn(`Reality Defender API: Only ${result.usage.requests_remaining} requests remaining`);
-      }
-
-      return result;
-
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      
-      // Retry logic for transient errors
-      if (retryCount < API_CONFIG.REALITY_DEFENDER.MAX_RETRIES && 
-          (error.name === 'AbortError' || error.message.includes('timeout') || error.message.includes('500'))) {
-        
-        console.log(`Retrying Reality Defender API call (attempt ${retryCount + 1}/${API_CONFIG.REALITY_DEFENDER.MAX_RETRIES})`);
-        
-        await new Promise(resolve => setTimeout(resolve, API_CONFIG.REALITY_DEFENDER.RETRY_DELAY_MS * (retryCount + 1)));
-        
-        return this.callRealityDefenderAPI(fileUrl, retryCount + 1);
-      }
-      
-      throw error;
-    }
-  }
-
-  // Enhanced response parsing with detailed analysis
-  private static parseRealityDefenderResponse(result: any): {
-    confidence_score: number;
-    classification: 'authentic' | 'deepfake' | 'suspicious';
-    heatmap_data: any;
-    manipulation_details?: any;
-  } {
-    let confidenceScore = 50; // Default fallback
-    let classification: 'authentic' | 'deepfake' | 'suspicious' = 'suspicious';
-    
-    // Try multiple response formats for maximum compatibility
-    if (result.result) {
-      const resultData = result.result;
-      
-      // Priority 1: Direct confidence score
-      if (resultData.confidence !== undefined) {
-        confidenceScore = parseFloat((resultData.confidence * 100).toFixed(2));
-      }
-      // Priority 2: Authenticity score
-      else if (resultData.authenticity_score !== undefined) {
-        confidenceScore = parseFloat((resultData.authenticity_score * 100).toFixed(2));
-      }
-      // Priority 3: Fake probability (inverted)
-      else if (resultData.fake_probability !== undefined) {
-        confidenceScore = parseFloat((100 - resultData.fake_probability * 100).toFixed(2));
-      }
-      // Priority 4: General score
-      else if (resultData.score !== undefined) {
-        confidenceScore = parseFloat((resultData.score * 100).toFixed(2));
-      }
-      // Priority 5: Manipulation score (inverted)
-      else if (resultData.manipulation_score !== undefined) {
-        confidenceScore = parseFloat((100 - resultData.manipulation_score * 100).toFixed(2));
-      }
-    }
-    
-    // Enhanced classification logic with better thresholds
-    if (confidenceScore >= 85) {
-      classification = 'authentic';
-    } else if (confidenceScore >= 60) {
-      classification = 'suspicious';
-    } else {
-      classification = 'deepfake';
-    }
-    
-    // Generate detailed heatmap data
-    const heatmapData = this.generateDetailedHeatmap(result, confidenceScore);
-    
-    // Extract manipulation details if available
-    const manipulationDetails = this.extractManipulationDetails(result);
-    
-    return {
-      confidence_score: confidenceScore,
-      classification,
-      heatmap_data: heatmapData,
-      manipulation_details: manipulationDetails
-    };
-  }
-
-  // Generate detailed heatmap with multiple regions
-  private static generateDetailedHeatmap(result: any, confidenceScore: number): any {
-    const baseRegions = [
-      { x: 0.2, y: 0.3, width: 0.1, height: 0.1, confidence: confidenceScore, type: 'face_region' },
-      { x: 0.6, y: 0.4, width: 0.15, height: 0.12, confidence: confidenceScore * 0.8, type: 'background' },
-      { x: 0.1, y: 0.7, width: 0.08, height: 0.08, confidence: confidenceScore * 0.9, type: 'lighting' }
-    ];
-    
-    // If Reality Defender provides specific regions, use them
-    if (result.result && result.result.regions && Array.isArray(result.result.regions)) {
-      return {
-        regions: result.result.regions,
-        api_response: result,
-        confidence_threshold: 0.7
-      };
-    }
-    
-    return {
-      regions: baseRegions,
-      api_response: result,
-      confidence_threshold: 0.7,
-      generated: true
-    };
-  }
-
-  // Extract detailed manipulation information
-  private static extractManipulationDetails(result: any): any {
-    if (!result.result) return null;
-    
-    const details: any = {
-      overall_score: 0,
-      face_manipulation: 0,
-      background_manipulation: 0,
-      lighting_inconsistencies: 0,
-      compression_artifacts: 0
-    };
-    
-    // Extract specific manipulation scores if available
-    if (result.result.face_manipulation !== undefined) {
-      details.face_manipulation = parseFloat((result.result.face_manipulation * 100).toFixed(2));
-    }
-    
-    if (result.result.background_manipulation !== undefined) {
-      details.background_manipulation = parseFloat((result.result.background_manipulation * 100).toFixed(2));
-    }
-    
-    if (result.result.lighting_inconsistencies !== undefined) {
-      details.lighting_inconsistencies = parseFloat((result.result.lighting_inconsistencies * 100).toFixed(2));
-    }
-    
-    if (result.result.compression_artifacts !== undefined) {
-      details.compression_artifacts = parseFloat((result.result.compression_artifacts * 100).toFixed(2));
-    }
-    
-    // Calculate overall manipulation score
-    const scores = [details.face_manipulation, details.background_manipulation, 
-                   details.lighting_inconsistencies, details.compression_artifacts];
-    const validScores = scores.filter(score => score > 0);
-    
-    if (validScores.length > 0) {
-      details.overall_score = parseFloat((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2));
-    }
-    
-    return details;
-  }
+  // Remove old manipulation details extraction - now handled by edge function
 
   // Enhanced fallback analysis
   private static getFallbackAnalysis(startTime: number, errorMessage?: string): {
