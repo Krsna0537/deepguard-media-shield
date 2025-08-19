@@ -118,8 +118,10 @@ export default function Upload() {
         description: `Successfully analyzed ${results.length} file(s) using Reality Defender API`,
       });
 
-      // Navigate to results page
-      navigate('/results');
+      // Navigate to results page for the first analyzed file
+      if (results.length > 0) {
+        navigate(`/results/${results[0].mediaFile.id}`);
+      }
       
     } catch (error: any) {
       console.error('❌ Upload/Analysis error:', error);
