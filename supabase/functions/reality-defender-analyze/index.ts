@@ -47,7 +47,14 @@ serve(async (req) => {
 
   try {
     const apiKey = Deno.env.get('REALITY_DEFENDER_API_KEY');
-    if (!apiKey) {
+    console.log('API Key check:', {
+      found: !!apiKey,
+      length: apiKey?.length || 0,
+      starts_with: apiKey?.substring(0, 8) || 'not found'
+    });
+    
+    if (!apiKey || apiKey.trim() === '' || apiKey === 'YOUR_REALITY_DEFENDER_API_KEY_HERE') {
+      console.error('Reality Defender API key not found or invalid');
       throw new Error('Reality Defender API key not configured');
     }
 
