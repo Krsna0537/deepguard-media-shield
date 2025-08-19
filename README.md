@@ -12,16 +12,18 @@ A modern web application for AI-powered deepfake detection and media authenticat
 - **PDF Reports**: Downloadable analysis reports with full metadata
 - **User Management**: Secure authentication with profile customization
 - **Responsive Design**: Mobile-first design with dark/light theme support
+- **Reality Defender Integration**: Seamless integration with Reality Defender API for professional deepfake detection
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: Tailwind CSS + shadcn/ui components
-- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+- **Backend**: Supabase (PostgreSQL + Auth + Storage + Edge Functions)
 - **Charts**: Recharts for data visualization
 - **State Management**: React hooks + Context API
 - **Routing**: React Router v6
 - **Notifications**: React Hot Toast + Sonner
+- **API Integration**: Reality Defender API for deepfake detection
 
 ## 📋 Prerequisites
 
@@ -48,7 +50,11 @@ yarn install
 bun install
 ```
 
-### 3. Set Up Supabase
+### 3. Set Up Edge Functions
+
+This project uses Supabase Edge Functions to handle API requests. See [EDGE_FUNCTION_SETUP.md](./EDGE_FUNCTION_SETUP.md) for detailed instructions on deploying the required edge functions.
+
+### 4. Set Up Supabase
 
 1. Create a new Supabase project at [supabase.com](https://supabase.com)
 2. Get your project URL and anon key from Settings > API

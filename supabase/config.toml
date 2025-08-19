@@ -2,3 +2,6 @@ project_id = "dnqdnsscbbkbrqengcjm"
 
 [functions.reality-defender-analyze]
 verify_jwt = true
+
+[functions.aws-presigned]
+verify_jwt = false
