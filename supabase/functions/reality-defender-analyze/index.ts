@@ -81,10 +81,10 @@ serve(async (req) => {
 async function analyzeWithRealityDefender(apiKey: string, fileUrl: string, fileType: string): Promise<any> {
   const startTime = Date.now();
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
   try {
-    console.log('Starting Reality Defender analysis with official package...');
+    console.log('Starting Reality Defender analysis with correct API flow...');
     console.log('File URL:', fileUrl);
     console.log('File Type:', fileType);
     console.log('API Key length:', apiKey ? apiKey.length : 0);
@@ -95,12 +95,7 @@ async function analyzeWithRealityDefender(apiKey: string, fileUrl: string, fileT
       throw new Error('Invalid or missing Reality Defender API key');
     }
 
-    // Initialize RealityDefender with the official package
-    const realityDefender = new RealityDefender({
-      apiKey: apiKey,
-    });
-
-    // Fetch the file from the provided URL
+    // Step 1: Fetch the file from the provided URL
     console.log('Fetching file from URL...');
     const fileResponse = await fetch(fileUrl, { signal: controller.signal });
     
@@ -111,70 +106,119 @@ async function analyzeWithRealityDefender(apiKey: string, fileUrl: string, fileT
     const fileBuffer = await fileResponse.arrayBuffer();
     console.log('File fetched successfully, size:', fileBuffer.byteLength, 'bytes');
 
-    // Since RealityDefender package expects local file paths, we'll use the direct API approach
-    // but with the package's configuration and error handling patterns
-    console.log('Using direct API approach with RealityDefender package validation...');
+    // Step 2: Request a signed URL from Reality Defender
+    console.log('Requesting signed URL from Reality Defender...');
+    const fileName = `file_${Date.now()}.${fileType.split('/')[1] || 'bin'}`;
     
-    // Create form data for Reality Defender API (same as before, but with better structure)
-    const formData = new FormData();
-    const blob = new Blob([fileBuffer], { type: fileType });
-    formData.append('file', blob, `file.${fileType.split('/')[1] || 'bin'}`);
-    
-    // Add analysis parameters
-    formData.append('detailed_analysis', 'true');
-    formData.append('confidence_threshold', '0.7');
-    formData.append('include_heatmap', 'true');
-
-    console.log('Calling Reality Defender API...');
-    console.log('API URL: https://api.prd.realitydefender.xyz/api/v2/detect');
-    
-    const response = await fetch('https://api.prd.realitydefender.xyz/api/v2/detect', {
+    const signedUrlResponse = await fetch('https://api.prd.realitydefender.xyz/api/files/aws-presigned', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'User-Agent': 'DeepGuard/1.0',
+        'X-API-KEY': apiKey,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({
+        fileName: fileName
+      }),
       signal: controller.signal
     });
 
-    clearTimeout(timeoutId);
-
-    console.log('Reality Defender API response status:', response.status);
-    console.log('Reality Defender API response headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Reality Defender API error: ${response.status} ${response.statusText} - ${errorText}`);
-      throw new Error(`Reality Defender API error: ${response.status} ${response.statusText}`);
+    console.log('Signed URL response status:', signedUrlResponse.status);
+    
+    if (!signedUrlResponse.ok) {
+      const errorText = await signedUrlResponse.text();
+      console.error(`Signed URL request failed: ${signedUrlResponse.status} ${signedUrlResponse.statusText} - ${errorText}`);
+      throw new Error(`Failed to get signed URL: ${signedUrlResponse.status} ${signedUrlResponse.statusText}`);
     }
 
-    const result: RealityDefenderResponse = await response.json();
-    console.log('Reality Defender API response received successfully');
-    console.log('Response structure:', Object.keys(result));
-    console.log('Full response body:', JSON.stringify(result, null, 2));
+    const signedUrlData = await signedUrlResponse.json();
+    console.log('Signed URL received:', signedUrlData);
+
+    if (!signedUrlData.url) {
+      throw new Error('No signed URL received from Reality Defender API');
+    }
+
+    // Step 3: Upload file to the signed URL
+    console.log('Uploading file to signed URL...');
+    const uploadResponse = await fetch(signedUrlData.url, {
+      method: 'PUT',
+      body: fileBuffer,
+      headers: {
+        'Content-Type': fileType,
+      },
+      signal: controller.signal
+    });
+
+    console.log('File upload response status:', uploadResponse.status);
     
-    // Check for API errors in response
-    if (result.error) {
-      throw new Error(`Reality Defender API error: ${result.error}`);
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error(`File upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
+      throw new Error(`Failed to upload file: ${uploadResponse.status} ${uploadResponse.statusText}`);
+    }
+
+    console.log('File uploaded successfully');
+
+    // Step 4: Request analysis results
+    console.log('Requesting analysis results...');
+    const fileId = signedUrlData.fileId || signedUrlData.id;
+    
+    if (!fileId) {
+      throw new Error('No file ID received from signed URL response');
+    }
+
+    // Wait a moment for processing to start
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Poll for results (Reality Defender processes asynchronously)
+    let attempts = 0;
+    const maxAttempts = 15; // 15 attempts with 2-second intervals = 30 seconds max
+    
+    while (attempts < maxAttempts) {
+      console.log(`Checking results (attempt ${attempts + 1}/${maxAttempts})...`);
+      
+      const resultsResponse = await fetch(`https://api.prd.realitydefender.xyz/api/files/${fileId}/results`, {
+        method: 'GET',
+        headers: {
+          'X-API-KEY': apiKey,
+        },
+        signal: controller.signal
+      });
+
+      console.log('Results response status:', resultsResponse.status);
+      
+      if (resultsResponse.ok) {
+        const result = await resultsResponse.json();
+        console.log('Analysis result received:', result);
+        
+        // Check if processing is complete
+        if (result.status === 'completed' || result.results) {
+          clearTimeout(timeoutId);
+          
+          // Parse the response
+          const parsedResult = parseRealityDefenderResponse(result);
+          
+          return {
+            ...parsedResult,
+            processing_time_ms: Date.now() - startTime,
+            api_provider: 'Reality Defender (Official API)',
+            raw_response: result
+          };
+        } else if (result.status === 'failed' || result.status === 'error') {
+          throw new Error(`Analysis failed: ${result.message || 'Unknown error'}`);
+        }
+        
+        console.log('Analysis still processing, waiting...');
+      } else {
+        console.log('Results not ready yet, waiting...');
+      }
+      
+      attempts++;
+      if (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     }
     
-    // Validate response structure
-    if (!result.result && !result.status) {
-      console.warn('Unexpected response structure from RealityDefender API');
-      console.warn('Response keys:', Object.keys(result));
-      console.warn('This might indicate a different API response format');
-    }
-    
-    // Parse the response
-    const parsedResult = parseRealityDefenderResponse(result);
-    
-    return {
-      ...parsedResult,
-      processing_time_ms: Date.now() - startTime,
-      api_provider: 'Reality Defender (Official Package)',
-      raw_response: result
-    };
+    throw new Error('Analysis timeout - results not available within expected timeframe');
 
   } catch (error: any) {
     clearTimeout(timeoutId);
